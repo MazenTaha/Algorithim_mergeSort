@@ -3,67 +3,66 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Merge Sort Visualizer</title>
+    <title>Merge Sort Step Visualizer</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            font-family: sans-serif;
+            background-color: #f3f3f3;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
+            padding: 40px;
         }
 
         h1 {
             margin-bottom: 20px;
         }
 
-        .input-section {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
+        .input-area {
+            margin-bottom: 30px;
         }
 
-        input,
-        button {
+        input {
             padding: 10px;
-            width: 300px;
             font-size: 16px;
+            width: 300px;
             border-radius: 6px;
             border: 1px solid #ccc;
-            box-sizing: border-box;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         button {
-            cursor: pointer;
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-size: 16px;
+            border-radius: 6px;
             background-color: #007bff;
             color: white;
             border: none;
+            cursor: pointer;
         }
 
-        #output {
-            background-color: #e9ecef;
-            color: #333;
+        .step-box {
+            background: white;
+            border: 2px solid #444;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 18px;
+            width: fit-content;
         }
 
-        #array-container {
+        .output-container {
+            margin-top: 30px;
             display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            height: 200px;
-            margin-top: 20px;
-            gap: 4px;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .bar {
-            width: 20px;
-            background-color: steelblue;
-            transition: height 0.3s ease, background-color 0.3s ease;
+        .final-output {
+            margin-top: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: green;
         }
     </style>
 </head>
@@ -72,75 +71,73 @@
 
     <h1>Merge Sort Visualizer</h1>
 
-    <div class="input-section">
-        <input type="number" id="array-size" placeholder="Enter array size (e.g. 5)">
-        <input type="text" id="array-values" placeholder="Enter numbers (e.g. 12, 11, 13, 5, 6)">
-        <button onclick="startMergeSort()">Sort</button>
-        <input type="text" id="output" placeholder="Sorted output will appear here..." readonly>
+    <div class="input-area">
+        <input type="text" id="arrayInput" placeholder="Enter array, e.g. 38,27,43,10">
+        <button onclick="startMergeSort()">Visualize</button>
     </div>
 
-    <div id="array-container"></div>
+    <div class="output-container" id="output"></div>
 
     <script>
-        let array = [];
-
         function startMergeSort() {
-            const size = parseInt(document.getElementById("array-size").value);
-            const input = document.getElementById("array-values").value;
-            const values = input.split(',').map(n => parseInt(n.trim()));
+            const input = document.getElementById("arrayInput").value;
+            const array = input.split(",").map(x => parseInt(x.trim())).filter(x => !isNaN(x));
 
-            if (values.length !== size || values.some(isNaN)) {
-                alert("Array size and entered numbers do not match or contain invalid values.");
+            if (array.length === 0) {
+                alert("Please enter a valid array.");
                 return;
             }
 
-            array = values.slice(); // clone original
-            createBars(array);
-            mergeSort(array, 0, array.length - 1).then(() => {
-                document.getElementById("output").value = array.join(', ');
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = ""; // clear old output
+
+            const steps = [];
+            const sorted = mergeSort(array, steps);
+
+            // Show each merge step
+            steps.forEach(step => {
+                const div = document.createElement("div");
+                div.className = "step-box";
+                div.textContent = `[${step.left.join(", ")}] + [${step.right.join(", ")}] → [${step.result.join(", ")}]`;
+                outputDiv.appendChild(div);
             });
+
+            // Final sorted output
+            const final = document.createElement("div");
+            final.className = "final-output";
+            final.textContent = `Final Sorted Array: [${sorted.join(", ")}]`;
+            outputDiv.appendChild(final);
         }
 
-        function createBars(arr) {
-            const container = document.getElementById("array-container");
-            container.innerHTML = '';
-            arr.forEach(value => {
-                const bar = document.createElement('div');
-                bar.classList.add('bar');
-                bar.style.height = `${value * 4}px`; // scale height
-                container.appendChild(bar);
-            });
+        function mergeSort(arr, steps) {
+            if (arr.length <= 1) return arr;
+
+            const mid = Math.floor(arr.length / 2);
+            const left = mergeSort(arr.slice(0, mid), steps);
+            const right = mergeSort(arr.slice(mid), steps);
+
+            const merged = merge(left, right);
+            steps.push({ left, right, result: merged.slice() }); // Log this merge step
+            return merged;
         }
 
-        async function mergeSort(arr, l, r) {
-            if (l >= r) return;
-            const m = Math.floor((l + r) / 2);
-            await mergeSort(arr, l, m);
-            await mergeSort(arr, m + 1, r);
-            await merge(arr, l, m, r);
-            createBars(arr);
-            await sleep(400);
-        }
-
-        async function merge(arr, l, m, r) {
-            let left = arr.slice(l, m + 1);
-            let right = arr.slice(m + 1, r + 1);
-            let i = 0, j = 0, k = l;
+        function merge(left, right) {
+            let result = [];
+            let i = 0, j = 0;
 
             while (i < left.length && j < right.length) {
                 if (left[i] <= right[j]) {
-                    arr[k++] = left[i++];
+                    result.push(left[i++]);
                 } else {
-                    arr[k++] = right[j++];
+                    result.push(right[j++]);
                 }
             }
 
-            while (i < left.length) arr[k++] = left[i++];
-            while (j < right.length) arr[k++] = right[j++];
-        }
+            // Add remaining
+            while (i < left.length) result.push(left[i++]);
+            while (j < right.length) result.push(right[j++]);
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+            return result;
         }
     </script>
 
